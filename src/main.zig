@@ -64,7 +64,7 @@ pub fn checkMapOffset(startingIndex: u64, buffer: []u8, bufferAddr: u64, bufferL
     // Windows memory is aligned by 4 bytes, but the array is aligned by 8 bytes.
     // If we step by 8 bytes, we can miss the table when it is not aligned correctly.
 
-    var validEntries: u16 = 0;
+    var validEntries: i64 = 0;
     var valueToIndex: [RC4_TABLE_SIZE]u16 = [_]u16{RC4_INVALID_VALUE} ** RC4_TABLE_SIZE;
     var indexToValue: [RC4_TABLE_SIZE]u16 = [_]u16{RC4_INVALID_VALUE} ** RC4_TABLE_SIZE;
 
@@ -74,26 +74,28 @@ pub fn checkMapOffset(startingIndex: u64, buffer: []u8, bufferAddr: u64, bufferL
         const value = buffer[i];
         const tableIndex: u16 = @intCast((i / 8) % RC4_TABLE_SIZE);
 
-        const deletedValue = indexToValue[tableIndex];
-
-        //
-        if (deletedValue != RC4_INVALID_VALUE) {
-            valueToIndex[deletedValue] = RC4_INVALID_VALUE;
+        // Clear information about old value.
+        const oldValue = indexToValue[tableIndex];
+        if (oldValue != RC4_INVALID_VALUE) {
+            valueToIndex[oldValue] = RC4_INVALID_VALUE;
             indexToValue[tableIndex] = RC4_INVALID_VALUE;
             validEntries -= 1;
         }
 
-        //
-        if (valueToIndex[value] == RC4_INVALID_VALUE) {
-            valueToIndex[value] = tableIndex;
-            indexToValue[tableIndex] = value;
+        // Check if value is unique.
+        const isValueUnique = valueToIndex[value] == RC4_INVALID_VALUE;
+        if (isValueUnique) {
             validEntries += 1;
         } else {
+            // Value already exists, RC4 tables should not have duplicate values.
+            // Clear the old indexToValue entry, so that the new one becomes unique.
             indexToValue[valueToIndex[value]] = RC4_INVALID_VALUE;
-            indexToValue[tableIndex] = value;
-            valueToIndex[value] = tableIndex;
         }
 
+        valueToIndex[value] = tableIndex;
+        indexToValue[tableIndex] = value;
+
+        // Check if we have found 256 unique values in a row.
         if (validEntries == RC4_TABLE_SIZE) {
             const tablePos: u64 = i - ((RC4_TABLE_SIZE - 1) * 8);
             const tableAddr = bufferAddr + tablePos;
