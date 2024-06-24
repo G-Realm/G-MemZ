@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const windows = @import("./windows/impl.zig");
+const macos = @import("./macos/impl.zig");
 
 pub const P_HANDLE = u32;
 
@@ -17,6 +18,10 @@ pub const MemoryMap = struct {
 pub fn getProcesses() !std.ArrayList(ProcessInformation) {
     if (builtin.os.tag == .windows) {
         return windows.getProcesses();
+    }
+
+    if (builtin.os.tag == .macos) {
+        return macos.getProcesses();
     }
 
     return error.UnsupportedPlatform;
