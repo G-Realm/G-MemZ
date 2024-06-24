@@ -36,7 +36,7 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
 
         try result.append(process.ProcessInformation{
             .pid = pid,
-            .name = try allocator.dupe(u8, name),
+            .path = try allocator.dupe(u8, name),
         });
     }
 

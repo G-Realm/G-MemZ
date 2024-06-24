@@ -17,16 +17,16 @@ pub fn main() !void {
     for (processes.items) |process| {
         // Check if process path ends with "Habbo.exe".
         if (builtin.os.tag == .windows) {
-            if (!std.mem.endsWith(u8, process.name, "Habbo.exe")) {
+            if (!std.mem.endsWith(u8, process.path, "Habbo.exe")) {
                 continue;
             }
         } else {
-            if (!std.mem.containsAtLeast(u8, process.name, 1, "Habbo")) {
+            if (!std.mem.containsAtLeast(u8, process.path, 1, "Habbo")) {
                 continue;
             }
         }
 
-        std.debug.print("[{}] {s}\n", .{ process.pid, process.name });
+        std.debug.print("[{}] {s}\n", .{ process.pid, process.path });
 
         try checkProcess(process);
     }
@@ -36,7 +36,7 @@ pub fn main() !void {
 
 // Find all memory regions in a process.
 pub fn checkProcess(process: platform.ProcessInformation) !void {
-    std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.name });
+    std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.path });
 
     // Open process.
     const processHandle = try platform.openProcess(process.pid);
