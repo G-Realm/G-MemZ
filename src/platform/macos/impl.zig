@@ -23,7 +23,7 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
 
     // const procInfo = allocator.alloc(darwin.kinfo_proc, len);
 
-    std.log.debug("len is {}", .{dataLen});
+    std.log.info("len is {}", .{dataLen});
 
     return result;
 }
