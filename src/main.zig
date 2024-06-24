@@ -7,6 +7,8 @@ const RC4_INVALID_VALUE: u16 = 0xFFFF;
 const RC4_INVALID_MASK_SHOCKWAVE: u64 = 0xFFFFFFFB_FFFFFF00;
 
 pub fn main() !void {
+    std.debug.print("Running G-MemZ\n", .{});
+
     // Get processes.
     var processes = try platform.getProcesses();
     defer processes.clearAndFree();
@@ -19,6 +21,8 @@ pub fn main() !void {
 
         try checkProcess(process);
     }
+
+    std.debug.print("Finished\n", .{});
 }
 
 // Find all memory regions in a process.
