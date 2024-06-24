@@ -15,6 +15,8 @@ pub fn main() !void {
 
     for (processes.items) |process| {
         // Check if process path ends with "Habbo.exe".
+        std.debug.print("[{}] {s}\n", .{ process.pid, process.name });
+
         if (!std.mem.endsWith(u8, process.name, "Habbo.exe")) {
             continue;
         }
