@@ -56,3 +56,24 @@ pub fn openProcess(processId: u32) !u32 {
 
     return task;
 }
+
+pub fn closeProcess(taskId: u32) void {
+    _ = c.mach_port_deallocate(c.mach_task_self(), taskId);
+}
+
+pub fn getMemoryMaps(taskId: u32) !std.ArrayList(process.MemoryMap) {
+    const result = std.ArrayList(process.MemoryMap).init(allocator);
+
+    var address: u64 = 0;
+    var size: u64 = 0;
+    var objName: u64 = 0;
+    var info: u64 = 0;
+    var count: u32 = 0;
+
+    while (true) {
+        _ = c.mach_vm_region(taskId, &address, &size, c.VM_REGION_BASIC_INFO_64, &info, &count, &objName);
+        break;
+    }
+
+    return result;
+}

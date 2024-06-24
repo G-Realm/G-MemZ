@@ -42,12 +42,18 @@ pub fn openProcess(processId: u32) !P_HANDLE {
 pub fn closeProcess(handleId: P_HANDLE) void {
     if (builtin.os.tag == .windows) {
         windows.closeProcess(handleId);
+    } else if (builtin.os.tag == .macos) {
+        macos.closeProcess(handleId);
     }
 }
 
 pub fn getMemoryMaps(processId: u32) !std.ArrayList(MemoryMap) {
     if (builtin.os.tag == .windows) {
         return windows.getMemoryMaps(processId);
+    }
+
+    if (builtin.os.tag == .macos) {
+        return macos.getMemoryMaps(processId);
     }
 
     return error.UnsupportedPlatform;
