@@ -50,7 +50,6 @@ pub fn openProcess(processId: u32) !u32 {
     // https://os-tres.net/blog/2010/02/17/mac-os-x-and-task-for-pid-mach-call/
     const kRet = c.task_for_pid(c.mach_task_self(), @intCast(processId), &task);
     if (kRet != 0) {
-        std.log.debug("kRet was {}", .{kRet});
         return error.FailedTaskForPid;
     }
 
@@ -97,26 +96,14 @@ pub fn getMemoryMaps(taskId: u32) !std.ArrayList(process.MemoryMap) {
 }
 
 pub fn readMemory(taskId: u32, address: usize, size: usize, dest: [*]u8) !void {
-    var dataAddress: u64 = 0;
-    var dataRead: c_uint = 0;
+    var dataRead: u64 = 0;
 
-    var kRet = c.mach_vm_read(taskId, address, size, &dataAddress, &dataRead);
+    const kRet = c.mach_vm_read_overwrite(taskId, address, size, @intFromPtr(dest), &dataRead);
     if (kRet != c.KERN_SUCCESS) {
         return;
     }
 
     if (dataRead != size) {
         return error.MemoryReadIncomplete;
-    }
-
-    const data: [*]u8 = @ptrFromInt(dataAddress);
-
-    @memcpy(dest[0..size], data);
-
-    // Deallocate the memory.
-    kRet = c.mach_vm_deallocate(taskId, dataAddress, dataRead);
-
-    if (kRet != c.KERN_SUCCESS) {
-        return error.MemoryDeallocateFailed;
     }
 }

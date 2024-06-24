@@ -39,7 +39,14 @@ pub fn checkProcess(process: platform.ProcessInformation) !void {
     std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.path });
 
     // Open process.
-    const processHandle = try platform.openProcess(process.pid);
+    const processHandle = platform.openProcess(process.pid) catch |err| switch (err) {
+        error.FailedTaskForPid => {
+            std.debug.print("Failed to open process: {}\n", .{process.pid});
+            return;
+        },
+        else => return err,
+    };
+
     defer platform.closeProcess(processHandle);
 
     // Get process memory maps.

@@ -1,13 +1,13 @@
 #include <mach/kern_return.h>
 #include <mach/mach.h>
 
-kern_return_t mach_vm_read
+kern_return_t mach_vm_read_overwrite
 (
 	vm_map_read_t target_task,
 	mach_vm_address_t address,
 	mach_vm_size_t size,
-	vm_offset_t *data,
-	mach_msg_type_number_t *dataCnt
+	mach_vm_address_t data,
+	mach_vm_size_t *outsize
 );
 
 kern_return_t mach_vm_region
