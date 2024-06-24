@@ -51,7 +51,7 @@ pub fn checkMap(processHandle: u32, map: *const platform.MemoryMap) !void {
     try checkMapOffset(4, buffer, map.base, map.size);
 }
 
-pub fn checkMapOffset(startingIndex: u64, buffer: []u8, bufferAddr: u64, bufferLen: u64) !void {
+pub fn checkMapOffset(startingIndex: usize, buffer: []u8, bufferAddr: u64, bufferLen: u64) !void {
     // Shockwave arrays are stored in memory like this
     // | D6 00 00 00 04 00 00 00 | 90 00 00 00 04 00 00 00 | 74 00 00 00 04 00 00 00 | E8 00 00 00 04 00 00 00 |
     // | A0 00 00 00 04 00 00 00 | E4 00 00 00 04 00 00 00 | D9 00 00 00 04 00 00 00 | 82 00 00 00 04 00 00 00 |
@@ -97,7 +97,7 @@ pub fn checkMapOffset(startingIndex: u64, buffer: []u8, bufferAddr: u64, bufferL
 
         // Check if we have found 256 unique values in a row.
         if (validEntries == RC4_TABLE_SIZE) {
-            const tablePos: u64 = i - ((RC4_TABLE_SIZE - 1) * 8);
+            const tablePos: usize = i - ((RC4_TABLE_SIZE - 1) * 8);
             const tableAddr = bufferAddr + tablePos;
             const tableSize = RC4_TABLE_SIZE * 8;
 

@@ -10,8 +10,8 @@ pub const ProcessInformation = struct {
 };
 
 pub const MemoryMap = struct {
-    base: u64,
-    size: u64,
+    base: usize,
+    size: usize,
 };
 
 pub fn getProcesses() !std.ArrayList(ProcessInformation) {
@@ -44,7 +44,7 @@ pub fn getMemoryMaps(processId: u32) !std.ArrayList(MemoryMap) {
     return error.UnsupportedPlatform;
 }
 
-pub fn readMemory(handleId: P_HANDLE, address: u64, size: u64, dest: [*]u8) !void {
+pub fn readMemory(handleId: P_HANDLE, address: usize, size: usize, dest: [*]u8) !void {
     if (builtin.os.tag == .windows) {
         return windows.readMemory(handleId, address, size, dest);
     }

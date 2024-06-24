@@ -100,9 +100,9 @@ pub fn getMemoryMaps(handleId: u32) !std.ArrayList(process.MemoryMap) {
     return result;
 }
 
-pub fn readMemory(handleId: u32, address: u64, size: u64, dest: [*]u8) !void {
+pub fn readMemory(handleId: u32, address: usize, size: usize, dest: [*]u8) !void {
     const handle = @as(windows.HANDLE, @ptrFromInt(handleId));
-    var bytesRead: u64 = 0;
+    var bytesRead: usize = 0;
 
     if (winapi.ReadProcessMemory(handle, @ptrFromInt(address), dest, size, &bytesRead) == 0) {
         return error.MemoryReadFailed;
