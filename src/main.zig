@@ -17,12 +17,12 @@ pub fn main() !void {
             continue;
         }
 
-        try checkProcess(&process);
+        try checkProcess(process);
     }
 }
 
 // Find all memory regions in a process.
-pub fn checkProcess(process: *const platform.ProcessInformation) !void {
+pub fn checkProcess(process: platform.ProcessInformation) !void {
     std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.name });
 
     // Open process.
@@ -36,12 +36,12 @@ pub fn checkProcess(process: *const platform.ProcessInformation) !void {
     std.debug.print("Found {} memory maps\n", .{memoryMaps.items.len});
 
     for (memoryMaps.items) |map| {
-        _ = try checkMap(processHandle, &map);
+        _ = try checkMap(processHandle, map);
     }
 }
 
 // Read all memory regions from the process.
-pub fn checkMap(processHandle: u32, map: *const platform.MemoryMap) !void {
+pub fn checkMap(processHandle: u32, map: platform.MemoryMap) !void {
     const buffer = try allocator.alloc(u8, @intCast(map.size));
     defer allocator.free(buffer);
 
