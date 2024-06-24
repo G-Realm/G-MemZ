@@ -5,24 +5,23 @@ const allocator = std.heap.page_allocator;
 const c = @import("c.zig");
 
 pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
-    std.debug.print("macos getProcesses\n", .{});
-
     var result = std.ArrayList(process.ProcessInformation).init(allocator);
 
-    const pidDataLen: usize = @intCast(c.proc_listpids(1, 0, null, 0));
-    const pidData = try allocator.alloc(u32, pidDataLen / @sizeOf(c_int));
+    const pidBytesLen: usize = @intCast(c.proc_listpids(1, 0, null, 0));
+    const pidDataLen = pidBytesLen / @sizeOf(c_int);
+    const pidData = try allocator.alloc(c_int, pidDataLen);
     defer allocator.free(pidData);
 
-    const pidCount: usize = @intCast(c.proc_listpids(1, 0, @ptrCast(pidData), @intCast(pidDataLen)));
-    if (pidCount == 0) {
+    const pidsReceived: usize = @intCast(c.proc_listpids(1, 0, @ptrCast(pidData), @intCast(pidBytesLen)));
+    if (pidsReceived == 0) {
         return error.FailedToListPids;
     }
 
+    const pidsTotal = pidsReceived / @sizeOf(c_int);
     var i: u32 = 0;
 
-    while (i < pidCount) : (i += 1) {
+    while (i < pidsTotal) : (i += 1) {
         const pid = pidData[i];
-
         if (pid == 0) {
             continue;
         }
@@ -36,13 +35,10 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
         const name = buffer[0..@intCast(bufferLen)];
 
         try result.append(process.ProcessInformation{
-            .pid = pid,
+            .pid = @intCast(pid),
             .name = try allocator.dupe(u8, name),
         });
     }
-
-    std.debug.print("macos out is {any}\n", .{pidCount});
-    std.debug.print("macos out is {any}\n", .{pidData});
 
     return result;
 }
