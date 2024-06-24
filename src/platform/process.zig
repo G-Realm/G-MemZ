@@ -8,6 +8,7 @@ pub const P_HANDLE = u32;
 pub const ProcessInformation = struct {
     pid: u32,
     path: []u8,
+    name: ?[]u8,
 };
 
 pub const MemoryMap = struct {

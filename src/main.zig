@@ -15,18 +15,19 @@ pub fn main() !void {
     defer processes.clearAndFree();
 
     for (processes.items) |process| {
-        // Check if process path ends with "Habbo.exe".
         if (builtin.os.tag == .windows) {
+            // Check if process path ends with "Habbo.exe".
             if (!std.mem.endsWith(u8, process.path, "Habbo.exe")) {
                 continue;
             }
         } else {
-            if (!std.mem.containsAtLeast(u8, process.path, 1, "Habbo")) {
+            // Shockwave runs under wine, process is named "Habbo.exe".
+            if (process.name == null or !std.mem.eql(u8, "Habbo.exe", process.name.?)) {
                 continue;
             }
         }
 
-        std.debug.print("[{}] {s}\n", .{ process.pid, process.path });
+        std.debug.print("[{}] {?s} - {s}\n", .{ process.pid, process.name, process.path });
 
         try checkProcess(process);
     }

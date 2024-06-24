@@ -27,16 +27,27 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
         }
 
         var buffer: [1024]u8 = undefined;
-        const bufferLen: c_int = c.proc_pidpath(@intCast(pid), &buffer, buffer.len);
+
+        // Read proc path.
+        var bufferLen: c_int = c.proc_pidpath(@intCast(pid), &buffer, buffer.len);
         if (bufferLen == 0) {
             continue;
         }
 
-        const name = buffer[0..@intCast(bufferLen)];
+        const path = try allocator.dupe(u8, buffer[0..@intCast(bufferLen)]);
+
+        // Read proc name.
+        bufferLen = c.proc_name(@intCast(pid), &buffer, buffer.len);
+        if (bufferLen == 0) {
+            continue;
+        }
+
+        const name = try allocator.dupe(u8, buffer[0..@intCast(bufferLen)]);
 
         try result.append(process.ProcessInformation{
             .pid = @intCast(pid),
-            .path = try allocator.dupe(u8, name),
+            .path = try allocator.dupe(u8, path),
+            .name = name,
         });
     }
 
