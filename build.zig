@@ -20,6 +20,8 @@ pub fn build(b: *std.Build) void {
             .optimize = .ReleaseSmall,
         });
 
+        exe.addIncludePath(b.path("src"));
+
         const target_output = b.addInstallArtifact(exe, .{
             .dest_dir = .{
                 .override = .{
