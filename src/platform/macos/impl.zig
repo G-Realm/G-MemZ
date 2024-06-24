@@ -42,3 +42,17 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
 
     return result;
 }
+
+pub fn openProcess(processId: u32) !u32 {
+    var task: c_uint = 0;
+
+    // TODO: Probably needs root.
+    // https://os-tres.net/blog/2010/02/17/mac-os-x-and-task-for-pid-mach-call/
+    const kRet = c.task_for_pid(c.mach_task_self(), @intCast(processId), &task);
+    if (kRet != 0) {
+        std.log.debug("kRet was {}", .{kRet});
+        return error.FailedTaskForPid;
+    }
+
+    return task;
+}

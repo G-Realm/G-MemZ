@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const platform = @import("./platform/process.zig");
 const allocator = std.heap.page_allocator;
 
@@ -15,11 +16,17 @@ pub fn main() !void {
 
     for (processes.items) |process| {
         // Check if process path ends with "Habbo.exe".
-        std.debug.print("[{}] {s}\n", .{ process.pid, process.name });
-
-        if (!std.mem.endsWith(u8, process.name, "Habbo.exe")) {
-            continue;
+        if (builtin.os.tag == .windows) {
+            if (!std.mem.endsWith(u8, process.name, "Habbo.exe")) {
+                continue;
+            }
+        } else {
+            if (!std.mem.containsAtLeast(u8, process.name, 1, "Habbo")) {
+                continue;
+            }
         }
+
+        std.debug.print("[{}] {s}\n", .{ process.pid, process.name });
 
         try checkProcess(process);
     }

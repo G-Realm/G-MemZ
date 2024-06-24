@@ -32,6 +32,10 @@ pub fn openProcess(processId: u32) !P_HANDLE {
         return windows.openProcess(processId);
     }
 
+    if (builtin.os.tag == .macos) {
+        return macos.openProcess(processId);
+    }
+
     return error.UnsupportedPlatform;
 }
 
