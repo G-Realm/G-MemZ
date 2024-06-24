@@ -64,5 +64,9 @@ pub fn readMemory(handleId: P_HANDLE, address: usize, size: usize, dest: [*]u8) 
         return windows.readMemory(handleId, address, size, dest);
     }
 
+    if (builtin.os.tag == .macos) {
+        return macos.readMemory(handleId, address, size, dest);
+    }
+
     return error.UnsupportedPlatform;
 }

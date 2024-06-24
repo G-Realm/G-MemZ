@@ -2,7 +2,7 @@ const std = @import("std");
 const posix = std.posix;
 const process = @import("../process.zig");
 const allocator = std.heap.page_allocator;
-const c = @import("c.zig");
+const c = @import("darwin.zig");
 
 pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
     var result = std.ArrayList(process.ProcessInformation).init(allocator);
@@ -62,18 +62,61 @@ pub fn closeProcess(taskId: u32) void {
 }
 
 pub fn getMemoryMaps(taskId: u32) !std.ArrayList(process.MemoryMap) {
-    const result = std.ArrayList(process.MemoryMap).init(allocator);
+    var result = std.ArrayList(process.MemoryMap).init(allocator);
 
     var address: u64 = 0;
     var size: u64 = 0;
-    var objName: u64 = 0;
-    var info: u64 = 0;
-    var count: u32 = 0;
+    var info: c.vm_region_basic_info_64 = undefined;
+    var infoCnt: c_uint = 9; // VM_REGION_BASIC_INFO_COUNT_64
+    var objName: c_uint = 0;
 
-    while (true) {
-        _ = c.mach_vm_region(taskId, &address, &size, c.VM_REGION_BASIC_INFO_64, &info, &count, &objName);
-        break;
+    while (true) : (address += size) {
+        const kRet = c.mach_vm_region(taskId, &address, &size, c.VM_REGION_BASIC_INFO_64, @ptrCast(&info), &infoCnt, &objName);
+        if (kRet != c.KERN_SUCCESS) {
+            if (kRet == c.KERN_INVALID_ADDRESS) {
+                break;
+            }
+
+            return error.FailedMemoryMap;
+        }
+
+        // Check if info.protection is READ and WRITE.
+        if ((info.protection & c.VM_PROT_READ) == 0 or (info.protection & c.VM_PROT_WRITE) == 0) {
+            continue;
+        }
+
+        // std.debug.print("Region {x:0>8}-{x:0>8} Prot {x} Shared {} Reserved {}\n", .{ address, address + size, info.protection, info.shared, info.reserved });
+
+        try result.append(process.MemoryMap{
+            .base = address,
+            .size = size,
+        });
     }
 
     return result;
+}
+
+pub fn readMemory(taskId: u32, address: usize, size: usize, dest: [*]u8) !void {
+    var dataAddress: u64 = 0;
+    var dataRead: c_uint = 0;
+
+    var kRet = c.mach_vm_read(taskId, address, size, &dataAddress, &dataRead);
+    if (kRet != c.KERN_SUCCESS) {
+        return;
+    }
+
+    if (dataRead != size) {
+        return error.MemoryReadIncomplete;
+    }
+
+    const data: [*]u8 = @ptrFromInt(dataAddress);
+
+    @memcpy(dest[0..size], data);
+
+    // Deallocate the memory.
+    kRet = c.mach_vm_deallocate(taskId, dataAddress, dataRead);
+
+    if (kRet != c.KERN_SUCCESS) {
+        return error.MemoryDeallocateFailed;
+    }
 }
