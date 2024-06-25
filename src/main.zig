@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const platform = @import("./platform/process.zig");
 const allocator = std.heap.page_allocator;
 
@@ -7,26 +8,46 @@ const RC4_INVALID_VALUE: u16 = 0xFFFF;
 const RC4_INVALID_MASK_SHOCKWAVE: u64 = 0xFFFFFFFB_FFFFFF00;
 
 pub fn main() !void {
+    std.debug.print("Running G-MemZ\n", .{});
+
     // Get processes.
     var processes = try platform.getProcesses();
     defer processes.clearAndFree();
 
     for (processes.items) |process| {
-        // Check if process path ends with "Habbo.exe".
-        if (!std.mem.endsWith(u8, process.name, "Habbo.exe")) {
-            continue;
+        if (builtin.os.tag == .windows) {
+            // Check if process path ends with "Habbo.exe".
+            if (!std.mem.endsWith(u8, process.path, "Habbo.exe")) {
+                continue;
+            }
+        } else {
+            // Shockwave runs under wine, process is named "Habbo.exe".
+            if (process.name == null or !std.mem.eql(u8, "Habbo.exe", process.name.?)) {
+                continue;
+            }
         }
+
+        std.debug.print("[{}] {?s} - {s}\n", .{ process.pid, process.name, process.path });
 
         try checkProcess(process);
     }
+
+    std.debug.print("Finished\n", .{});
 }
 
 // Find all memory regions in a process.
 pub fn checkProcess(process: platform.ProcessInformation) !void {
-    std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.name });
+    std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.path });
 
     // Open process.
-    const processHandle = try platform.openProcess(process.pid);
+    const processHandle = platform.openProcess(process.pid) catch |err| switch (err) {
+        error.FailedTaskForPid => {
+            std.debug.print("Failed to open process: {}\n", .{process.pid});
+            return;
+        },
+        else => return err,
+    };
+
     defer platform.closeProcess(processHandle);
 
     // Get process memory maps.
@@ -36,7 +57,12 @@ pub fn checkProcess(process: platform.ProcessInformation) !void {
     std.debug.print("Found {} memory maps\n", .{memoryMaps.items.len});
 
     for (memoryMaps.items) |map| {
-        _ = try checkMap(processHandle, map);
+        // Only check maps smaller than 4MB.
+        if (map.size > 4 * 1024 * 1024) {
+            continue;
+        }
+
+        try checkMap(processHandle, map);
     }
 }
 

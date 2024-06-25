@@ -20,9 +20,7 @@ pub fn build(b: *std.Build) void {
             .optimize = .ReleaseSmall,
         });
 
-        if (t.os_tag == .macos) {
-            exe.linkLibC();
-        }
+        exe.addIncludePath(b.path("src"));
 
         const target_output = b.addInstallArtifact(exe, .{
             .dest_dir = .{
