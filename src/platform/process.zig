@@ -5,6 +5,16 @@ const macos = @import("./macos/impl.zig");
 
 pub const P_HANDLE = u32;
 
+pub const PlatformError = error{
+    // Generic
+    UnsupportedPlatform,
+
+    // Windows
+    FailedToOpenHandle,
+    // macOS
+    FailedTaskForPid,
+};
+
 pub const ProcessInformation = struct {
     pid: u32,
     path: []u8,
@@ -28,7 +38,7 @@ pub fn getProcesses() !std.ArrayList(ProcessInformation) {
     return error.UnsupportedPlatform;
 }
 
-pub fn openProcess(processId: u32) !P_HANDLE {
+pub fn openProcess(processId: u32) PlatformError!P_HANDLE {
     if (builtin.os.tag == .windows) {
         return windows.openProcess(processId);
     }

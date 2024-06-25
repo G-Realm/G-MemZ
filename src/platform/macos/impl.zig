@@ -61,7 +61,7 @@ pub fn openProcess(processId: u32) !u32 {
     // https://os-tres.net/blog/2010/02/17/mac-os-x-and-task-for-pid-mach-call/
     const kRet = c.task_for_pid(c.mach_task_self(), @intCast(processId), &task);
     if (kRet != 0) {
-        return error.FailedTaskForPid;
+        return process.PlatformError.FailedTaskForPid;
     }
 
     return task;
