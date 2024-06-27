@@ -41,7 +41,7 @@ pub fn build(b: *std.Build) void {
 
     // Universal.
     if (builtin.os.tag == .macos) {
-        const universal_output = b.addInstallFile(macos_universal, "universal-macos/universal_app");
+        const universal_output = b.addInstallFile(macos_universal, "universal-macos/G-MemZ");
 
         b.getInstallStep().dependOn(&universal_output.step);
     }
