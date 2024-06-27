@@ -1,13 +1,13 @@
 on:
   push:
     paths:
-      - '.github/workflows/**'
-      - 'src/**'
-      - 'build.zig'
+      - ".github/workflows/**"
+      - "src/**"
+      - "build.zig"
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: goto-bus-stop/setup-zig@v2

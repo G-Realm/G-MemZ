@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const targets: []const std.Target.Query = &.{
     .{ .cpu_arch = .aarch64, .os_tag = .macos },
@@ -8,10 +9,11 @@ const targets: []const std.Target.Query = &.{
     .{ .cpu_arch = .x86_64, .os_tag = .windows },
 };
 
-// Although this function looks imperative, note that its job is to
-// declaratively construct a build graph that will be executed by an external
-// runner.
 pub fn build(b: *std.Build) void {
+    // Architecture specific.
+    const macos_universal_cmd = b.addSystemCommand(&.{ "lipo", "-create", "-output" });
+    const macos_universal = macos_universal_cmd.addOutputFileArg("universal_app");
+
     for (targets) |t| {
         const exe = b.addExecutable(.{
             .name = "G-MemZ",
@@ -31,5 +33,16 @@ pub fn build(b: *std.Build) void {
         });
 
         b.getInstallStep().dependOn(&target_output.step);
+
+        if (t.os_tag == .macos) {
+            macos_universal_cmd.addArtifactArg(exe);
+        }
+    }
+
+    // Universal.
+    if (builtin.os.tag == .macos) {
+        const universal_output = b.addInstallFile(macos_universal, "universal-macos/universal_app");
+
+        b.getInstallStep().dependOn(&universal_output.step);
     }
 }
