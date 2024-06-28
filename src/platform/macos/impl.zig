@@ -48,6 +48,7 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
             .pid = @intCast(pid),
             .path = try allocator.dupe(u8, path),
             .name = name,
+            .windowName = null,
         });
     }
 

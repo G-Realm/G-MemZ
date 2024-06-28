@@ -19,6 +19,7 @@ pub const ProcessInformation = struct {
     pid: u32,
     path: []u8,
     name: ?[]u8,
+    windowName: ?[]u8,
 };
 
 pub const MemoryMap = struct {

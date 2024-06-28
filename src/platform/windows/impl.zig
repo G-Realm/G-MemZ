@@ -6,6 +6,10 @@ const allocator = std.heap.page_allocator;
 
 pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
     var result = std.ArrayList(process.ProcessInformation).init(allocator);
+    var windowMap = std.AutoHashMap(u64, []u8).init(allocator);
+    defer windowMap.deinit();
+
+    try fillWindowMap(&windowMap);
 
     var processes = [_]u32{0} ** 1024;
     var needed: u32 = 0;
@@ -38,6 +42,7 @@ pub fn getProcesses() !std.ArrayList(process.ProcessInformation) {
             .pid = pid,
             .path = try allocator.dupe(u8, name),
             .name = null,
+            .windowName = windowMap.get(pid),
         });
     }
 
@@ -112,4 +117,43 @@ pub fn readMemory(handleId: u32, address: usize, size: usize, dest: [*]u8) !void
     if (bytesRead != size) {
         return error.MemoryReadIncomplete;
     }
+}
+
+fn fillWindowMap(windowMap: *std.AutoHashMap(u64, []u8)) !void {
+    if (winapi.EnumWindows(handleWindow, @intFromPtr(windowMap)) == 0) {
+        return error.FailedToEnumWindows;
+    }
+}
+
+export fn handleWindow(windowHandle: windows.HWND, param: usize) callconv(.C) bool {
+    const windowMap = @as(*std.AutoHashMap(u64, []u8), @ptrFromInt(param));
+
+    var processId: windows.DWORD = 0;
+
+    if (winapi.GetWindowThreadProcessId(windowHandle, &processId) == 0) {
+        return true;
+    }
+
+    if (windowMap.contains(processId)) {
+        return true;
+    }
+
+    // Check if main window.
+    // 4 = GW_OWNER
+    if (winapi.GetWindow(windowHandle, 4) == undefined) {
+        return true;
+    }
+
+    var lpString: [1024]u8 = undefined;
+    const lpStringLen = winapi.GetWindowTextA(windowHandle, @ptrCast(&lpString), @sizeOf(@TypeOf(lpString)));
+    if (lpStringLen == 0) {
+        return true;
+    }
+
+    const windowTitle = lpString[0..@intCast(lpStringLen)];
+    const windowTitleCopy = allocator.dupe(u8, windowTitle) catch return true;
+
+    windowMap.put(processId, windowTitleCopy) catch return true;
+
+    return true;
 }

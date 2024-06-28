@@ -75,3 +75,25 @@ pub extern "kernel32" fn VirtualQueryEx(
     lpBuffer: *windows.MEMORY_BASIC_INFORMATION,
     dwLength: u32,
 ) callconv(windows.WINAPI) u32;
+
+pub extern "user32" fn EnumWindows(
+    lpEnumFunc: *const fn (windows.HWND, usize) callconv(.C) bool,
+    lParam: usize,
+) callconv(windows.WINAPI) BOOL;
+
+pub extern "user32" fn GetWindow(
+    hWnd: windows.HWND,
+    uCmd: u32,
+) callconv(windows.WINAPI) windows.HWND;
+
+pub extern "user32" fn GetWindowThreadProcessId(
+    hWnd: windows.HWND,
+    lpdwProcessId: *DWORD,
+) callconv(windows.WINAPI) DWORD;
+
+// GetWindowTextA
+pub extern "user32" fn GetWindowTextA(
+    hWnd: windows.HWND,
+    lpString: [*]u8,
+    nMaxCount: i32,
+) callconv(windows.WINAPI) i32;

@@ -15,21 +15,22 @@ pub fn main() !void {
     defer processes.clearAndFree();
 
     for (processes.items) |process| {
-        if (builtin.os.tag == .windows) {
-            // Check if process path ends with "Habbo.exe".
-            if (!std.mem.endsWith(u8, process.path, "Habbo.exe")) {
-                continue;
+        // Check if process path ends with "Habbo.exe".
+        if (std.mem.endsWith(u8, process.path, "Habbo.exe") or
+            std.mem.containsAtLeast(u8, process.path, 1, "HabboHotel-"))
+        {
+            try checkProcess(process);
+        } else if (process.name != null) {
+            if (std.mem.eql(u8, process.name.?, "Habbo.exe") or
+                std.mem.containsAtLeast(u8, process.name.?, 1, "HabboHotel-"))
+            {
+                try checkProcess(process);
             }
-        } else {
-            // Shockwave runs under wine, process is named "Habbo.exe".
-            if (process.name == null or !std.mem.eql(u8, "Habbo.exe", process.name.?)) {
-                continue;
+        } else if (process.windowName != null) {
+            if (std.mem.containsAtLeast(u8, process.windowName.?, 1, "Habbo Hotel: Origins")) {
+                try checkProcess(process);
             }
         }
-
-        std.debug.print("[{}] {?s} - {s}\n", .{ process.pid, process.name, process.path });
-
-        try checkProcess(process);
     }
 
     std.debug.print("Finished\n", .{});
@@ -37,7 +38,12 @@ pub fn main() !void {
 
 // Find all memory regions in a process.
 pub fn checkProcess(process: platform.ProcessInformation) !void {
-    std.debug.print("Checking pid: {}, name: {s}\n", .{ process.pid, process.path });
+    std.debug.print("Dumping PID {}, Name: \"{?s}\", Window: \"{?s}\", Path: \"{s}\"\n", .{
+        process.pid,
+        process.name,
+        process.windowName,
+        process.path,
+    });
 
     // Open process.
     const processHandle = platform.openProcess(process.pid) catch |err| switch (err) {
