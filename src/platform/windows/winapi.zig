@@ -84,7 +84,7 @@ pub extern "user32" fn EnumWindows(
 pub extern "user32" fn GetWindow(
     hWnd: windows.HWND,
     uCmd: u32,
-) callconv(windows.WINAPI) windows.HWND;
+) callconv(windows.WINAPI) ?windows.HWND;
 
 pub extern "user32" fn GetWindowThreadProcessId(
     hWnd: windows.HWND,

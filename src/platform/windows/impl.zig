@@ -140,8 +140,7 @@ fn handleWindow(windowHandle: windows.HWND, param: usize) callconv(.C) bool {
 
     // Check if main window.
     // 4 = GW_OWNER
-    const windowOwner: usize = @intFromPtr(winapi.GetWindow(windowHandle, 4));
-    if (windowOwner != 0) {
+    if (winapi.GetWindow(windowHandle, 4) != null) {
         return true;
     }
 
