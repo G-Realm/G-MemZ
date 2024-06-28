@@ -125,7 +125,7 @@ fn fillWindowMap(windowMap: *std.AutoHashMap(u64, []u8)) !void {
     }
 }
 
-export fn handleWindow(windowHandle: windows.HWND, param: usize) callconv(.C) bool {
+fn handleWindow(windowHandle: windows.HWND, param: usize) callconv(.C) bool {
     const windowMap = @as(*std.AutoHashMap(u64, []u8), @ptrFromInt(param));
 
     var processId: windows.DWORD = 0;
@@ -140,7 +140,8 @@ export fn handleWindow(windowHandle: windows.HWND, param: usize) callconv(.C) bo
 
     // Check if main window.
     // 4 = GW_OWNER
-    if (winapi.GetWindow(windowHandle, 4) == undefined) {
+    const windowOwner: usize = @intFromPtr(winapi.GetWindow(windowHandle, 4));
+    if (windowOwner != 0) {
         return true;
     }
 
