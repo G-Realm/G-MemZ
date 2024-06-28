@@ -97,7 +97,7 @@ fn parseArgs() !void {
 }
 
 // Find all memory regions in a process.
-pub fn checkProcess(process: platform.ProcessInformation) !void {
+fn checkProcess(process: platform.ProcessInformation) !void {
     std.debug.print("Dumping PID {}, Name: \"{?s}\", Window: \"{?s}\", Path: \"{s}\"\n", .{
         process.pid,
         process.name,
@@ -133,7 +133,7 @@ pub fn checkProcess(process: platform.ProcessInformation) !void {
 }
 
 // Read all memory regions from the process.
-pub fn checkMap(processHandle: u32, map: platform.MemoryMap) !void {
+fn checkMap(processHandle: u32, map: platform.MemoryMap) !void {
     const buffer = try allocator.alloc(u8, @intCast(map.size));
     defer allocator.free(buffer);
 
@@ -157,7 +157,7 @@ pub fn checkMap(processHandle: u32, map: platform.MemoryMap) !void {
     }
 }
 
-pub fn checkMapOffset(startingIndex: usize, buffer: []u8, bufferAddr: u64, bufferLen: u64) !void {
+fn checkMapOffset(startingIndex: usize, buffer: []u8, bufferAddr: u64, bufferLen: u64) !void {
     const tableAlignment = hotelSettings.tableAlignment;
 
     var validEntries: i64 = 0;
@@ -203,7 +203,7 @@ pub fn checkMapOffset(startingIndex: usize, buffer: []u8, bufferAddr: u64, buffe
 }
 
 // Checks whether the found match is a valid RC4 table.
-pub fn checkValid(address: u64, buffer: []u8) !void {
+fn checkValid(address: u64, buffer: []u8) !void {
     const tableAlignment = hotelSettings.tableAlignment;
     const invalidMask = hotelSettings.invalidMask;
 
