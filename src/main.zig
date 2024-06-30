@@ -42,11 +42,22 @@ pub fn main() !void {
 }
 
 fn checkFlashProcess(process: platform.ProcessInformation) !void {
-    if (std.mem.containsAtLeast(u8, process.path, 1, "ppapi") or
-        std.mem.containsAtLeast(u8, process.path, 1, "plugin-container") or
-        std.mem.endsWith(u8, process.path, "Habbo.exe"))
-    {
-        try checkProcess(process);
+    if (builtin.os.tag == .macos) {
+        if (std.mem.containsAtLeast(u8, process.path, 1, "habbo") or
+            std.mem.containsAtLeast(u8, process.path, 1, "Habbo") or
+            std.mem.containsAtLeast(u8, process.path, 1, "flash") or
+            std.mem.containsAtLeast(u8, process.path, 1, "Flash") or
+            std.mem.containsAtLeast(u8, process.path, 1, "air"))
+        {
+            try checkProcess(process);
+        }
+    } else {
+        if (std.mem.containsAtLeast(u8, process.path, 1, "ppapi") or
+            std.mem.containsAtLeast(u8, process.path, 1, "plugin-container") or
+            std.mem.endsWith(u8, process.path, "Habbo.exe"))
+        {
+            try checkProcess(process);
+        }
     }
 }
 
