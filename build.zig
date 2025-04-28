@@ -32,11 +32,22 @@ pub fn build(b: *std.Build) void {
             },
         });
 
-        b.getInstallStep().dependOn(&target_output.step);
-
         if (t.os_tag == .macos) {
+            // Codesign with entitlements.
+            const sign_cmd = b.addSystemCommand(&.{
+                "codesign", "--force", "--entitlements", "Entitlements.plist", "--sign", "-",
+            });
+
+            sign_cmd.addArtifactArg(exe);
+
+            // Run the codesign command after the target output is created.
+            target_output.step.dependOn(&sign_cmd.step);
+
+            // Add the target output to the universal command.
             macos_universal_cmd.addArtifactArg(exe);
         }
+
+        b.getInstallStep().dependOn(&target_output.step);
     }
 
     // Universal.
