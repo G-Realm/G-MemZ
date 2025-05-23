@@ -3,10 +3,9 @@ const builtin = @import("builtin");
 const platform = @import("./platform/process.zig");
 const allocator = std.heap.page_allocator;
 
-const RC4_TABLE_SIZE = 256;
 const RC4_INVALID_VALUE: u16 = 0xFFFF;
 const RC4_INVALID_MASK_FLASH: u64 = 0xFFFFFF00;
-const RC4_INVALID_MASK_SHOCKWAVE: u64 = 0xFFFFFFFB_FFFFFF00;
+const RC4_INVALID_MASK_SHOCKWAVE: u64 = 0xFFFFFFFB_FFFFF800;
 
 const HotelType = enum {
     FLASH,
@@ -14,6 +13,7 @@ const HotelType = enum {
 };
 
 const HotelSettings = struct {
+    tableSize: u32,
     tableAlignment: u32,
     invalidMask: u64,
 };
@@ -93,12 +93,14 @@ fn parseArgs() !void {
 
     if (std.mem.eql(u8, argHotelType.?, "flash")) {
         hotelType = HotelType.FLASH;
-        hotelSettings.invalidMask = RC4_INVALID_MASK_FLASH;
+        hotelSettings.tableSize = 256;
         hotelSettings.tableAlignment = 4;
+        hotelSettings.invalidMask = RC4_INVALID_MASK_FLASH;
     } else if (std.mem.eql(u8, argHotelType.?, "shockwave")) {
         hotelType = HotelType.SHOCKWAVE;
-        hotelSettings.invalidMask = RC4_INVALID_MASK_SHOCKWAVE;
+        hotelSettings.tableSize = 512;
         hotelSettings.tableAlignment = 8;
+        hotelSettings.invalidMask = RC4_INVALID_MASK_SHOCKWAVE;
     } else {
         std.debug.print("Usage: G-MemZ <flash|shockwave>\n", .{});
         return error.InvalidArgument;
@@ -172,14 +174,27 @@ fn checkMapOffset(startingIndex: usize, buffer: []u8, bufferAddr: u64, bufferLen
     const tableAlignment = hotelSettings.tableAlignment;
 
     var validEntries: i64 = 0;
-    var valueToIndex: [RC4_TABLE_SIZE]u16 = [_]u16{RC4_INVALID_VALUE} ** RC4_TABLE_SIZE;
-    var indexToValue: [RC4_TABLE_SIZE]u16 = [_]u16{RC4_INVALID_VALUE} ** RC4_TABLE_SIZE;
+    var valueToIndex: []u16 = try allocator.alloc(u16, hotelSettings.tableSize);
+    var indexToValue: []u16 = try allocator.alloc(u16, hotelSettings.tableSize);
+
+    @memset(valueToIndex, RC4_INVALID_VALUE);
+    @memset(indexToValue, RC4_INVALID_VALUE);
+
+    defer allocator.free(valueToIndex);
+    defer allocator.free(indexToValue);
 
     var i = startingIndex;
 
     while (i < bufferLen) : (i += tableAlignment) {
-        const value = buffer[i];
-        const tableIndex: u16 = @intCast((i / tableAlignment) % RC4_TABLE_SIZE);
+        const value = std.mem.readInt(u16, buffer[i..][0..2], .little);
+        if (value >= hotelSettings.tableSize) {
+            validEntries = 0;
+            @memset(valueToIndex, RC4_INVALID_VALUE);
+            @memset(indexToValue, RC4_INVALID_VALUE);
+            continue;
+        }
+
+        const tableIndex: u16 = @intCast((i / tableAlignment) % hotelSettings.tableSize);
 
         // Clear information about old value.
         const oldValue = indexToValue[tableIndex];
@@ -203,10 +218,10 @@ fn checkMapOffset(startingIndex: usize, buffer: []u8, bufferAddr: u64, bufferLen
         indexToValue[tableIndex] = value;
 
         // Check if we have found 256 unique values in a row.
-        if (validEntries == RC4_TABLE_SIZE) {
-            const tablePos: usize = i - ((RC4_TABLE_SIZE - 1) * tableAlignment);
+        if (validEntries == hotelSettings.tableSize) {
+            const tablePos: usize = i - ((hotelSettings.tableSize - 1) * tableAlignment);
             const tableAddr = bufferAddr + tablePos;
-            const tableSize = RC4_TABLE_SIZE * tableAlignment;
+            const tableSize = hotelSettings.tableSize * tableAlignment;
 
             try checkValid(tableAddr, buffer[tablePos .. tablePos + tableSize]);
         }
@@ -218,27 +233,32 @@ fn checkValid(address: u64, buffer: []u8) !void {
     const tableAlignment = hotelSettings.tableAlignment;
     const invalidMask = hotelSettings.invalidMask;
 
-    var table: [256]u8 = undefined;
+    var table: []u32 = try allocator.alloc(u32, hotelSettings.tableSize);
     var i: u32 = 0;
 
+    defer allocator.free(table);
+
     while (i < buffer.len) : (i += tableAlignment) {
-        const value = std.mem.readInt(u64, @ptrCast(buffer[i .. i + tableAlignment]), std.builtin.Endian.little);
+        const value = std.mem.readInt(u64, @ptrCast(buffer[i .. i + tableAlignment]), .little);
         const isValid = (value & invalidMask) == 0;
 
         if (!isValid) {
+            std.debug.print("Not valid? 0x{x:0>8}\n", .{value});
             return;
         }
 
-        table[@intCast(i / tableAlignment)] = @intCast(value & 0xFF);
+        table[@intCast(i / tableAlignment)] = std.mem.readInt(u32, buffer[i..][0..4], .little);
     }
 
     std.debug.print("Found potential RC4 table at: 0x{x:0>8}\n", .{address});
 
     // Get table as hexstring.
-    var hexString: [512]u8 = undefined;
+    var hexString: []u8 = try allocator.alloc(u8, hotelSettings.tableSize * 8);
+
+    defer allocator.free(hexString);
 
     for (table, 0..) |value, out| {
-        _ = try std.fmt.bufPrint(hexString[(out * 2)..], "{x:0>2}", .{value});
+        _ = try std.fmt.bufPrint(hexString[(out * 8)..], "{x:0>8}", .{value});
     }
 
     var stdout = std.io.getStdOut().writer();
