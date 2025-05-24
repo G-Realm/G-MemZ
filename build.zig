@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
             .name = "G-MemZ",
             .root_source_file = b.path("src/main.zig"),
             .target = b.resolveTargetQuery(t),
-            .optimize = .ReleaseSmall,
+            .optimize = .ReleaseFast,
         });
 
         exe.addIncludePath(b.path("src"));
