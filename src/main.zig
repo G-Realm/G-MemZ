@@ -136,11 +136,6 @@ fn checkProcess(process: platform.ProcessInformation) !void {
     std.debug.print("Found {} memory maps\n", .{memoryMaps.items.len});
 
     for (memoryMaps.items) |map| {
-        // Only check maps smaller than 4MB.
-        if (map.size > 4 * 1024 * 1024) {
-            continue;
-        }
-
         try checkMap(processHandle, map);
     }
 }
